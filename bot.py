@@ -5,11 +5,11 @@ import shutil
 import datetime
 
 # === CONFIGURATION ===
-ADB_PATH = r'"C:\Program Files\Microvirt\MEmu\adb.exe"'
-DEVICE = "127.0.0.1:21503"
+ADB_PATH = r'"C:\Program Files\Microvirt\MEmu\adb.exe"' # if we have different directory, change this
+DEVICE = "127.0.0.1:21503" 
 PACKAGE = "com.ea.game.simcitymobile_row"
 REMOTE_DIR = f"/sdcard/Android/data/{PACKAGE}/files"
-OUTPUT_DIR = r"E:\SUSSSSSSSS\SIMCITY\accounts"
+OUTPUT_DIR = r"E:\SUSSSSSSSS\SIMCITY\accounts" # change this to where the zip files will be save
 TEMP_DIR = "temp_simcity_data"
 LOOP_COUNT = 5
 WAIT_SECONDS = 25
