@@ -11,7 +11,7 @@ PACKAGE = "com.ea.game.simcitymobile_row"
 REMOTE_DIR = f"/sdcard/Android/data/{PACKAGE}/files"
 OUTPUT_DIR = r"E:\SUSSSSSSSS\SIMCITY\accounts" # change this to where the zip files will be save
 TEMP_DIR = "temp_simcity_data"
-LOOP_COUNT = 5
+LOOP_COUNT = 5 # how many account to do want, you can change this
 WAIT_SECONDS = 25
 
 # === HELPER FUNCTIONS ===
