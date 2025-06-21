@@ -8,10 +8,10 @@ import subprocess
 # === CONFIGURATION ===
 ADB_PATH = r"C:\Program Files\Microvirt\MEmu\adb.exe"  # Change if using a different ADB
 DEVICES = [
-    "192.168.254.126:6556",  # change this to your abd add in your adroid emulator
+    "123.123.234.130:6556",  # change this to your abd add in your adroid emulator
 ]
 DEVICE_NAMES = {
-    "192.168.254.126:6556": "MY_PHONE",
+    "123.123.234.123:6556": "MY_PHONE",
 }
 PACKAGE = "com.ea.game.simcitymobile_row"  # Change to your app's package if needed
 REMOTE_DIR = f"/sdcard/Android/data/{PACKAGE}/files"
