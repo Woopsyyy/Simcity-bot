@@ -50,14 +50,17 @@ def zip_folder(source_folder, zip_path):
                 zipf.write(file_path, arc_path)
 
 def get_group_folder_and_index(base_dir, date_str):
-    # Find the latest group folder for today, or create a new one if needed
+    # Scan all group folders for today
     group_num = 1
+    folders_to_check = []
     while True:
         group_folder = os.path.join(base_dir, f"{date_str} #{group_num}")
         if not os.path.exists(group_folder):
-            os.makedirs(group_folder)
-            return group_folder, 1  # Start at 1 if new
-        # Find used numbers in this folder
+            break
+        folders_to_check.append(group_folder)
+        group_num += 1
+    # Check for folders with missing zips
+    for idx, group_folder in enumerate(folders_to_check):
         zip_files = [f for f in os.listdir(group_folder) if f.endswith('.zip')]
         used_numbers = set()
         for fname in zip_files:
@@ -71,7 +74,10 @@ def get_group_folder_and_index(base_dir, date_str):
         for i in range(1, 101):
             if i not in used_numbers:
                 return group_folder, i
-        group_num += 1
+    # If all existing folders are full, create a new one
+    group_folder = os.path.join(base_dir, f"{date_str} #{group_num}")
+    os.makedirs(group_folder, exist_ok=True)
+    return group_folder, 1
 
 def backup_account(loop_index, device):
     global zip_counter
