@@ -6,14 +6,13 @@ import datetime
 import threading
 
 # === CONFIGURATION ===
-ADB_PATH = r'"C:\Program Files\Microvirt\MEmu\adb.exe"'  #change this into your correct adb path
-
-DEVICES = ["123.0.0.1:21503", "124.0.0.1:21513"] # this is your memu address change this, you can find your device using cmd, cd to the C:\Program Files\Microvirt\MEmu\ then type adb devices it will show all the instances
+ADB_PATH = r'"C:\Program Files\Microvirt\MEmu\adb.exe"' # if using other adb find your adb directory and put here
+DEVICES = ["153.1.0.1:21203"] # add another ip if you want more intances and put also in device_names
 PACKAGE = "com.ea.game.simcitymobile_row"
 REMOTE_DIR = f"/sdcard/Android/data/{PACKAGE}/files"
-OUTPUT_DIR = r"E:\SUSSSSSSSS\SIMCITY\accounts" # where your gamefile zip will be save, change this
+OUTPUT_DIR = r"E:\SUSSSSSSSS\SIMCITY\accounts" # where your accounts will be save, changable
 TEMP_DIR = "temp_simcity_data"
-LOOP_COUNT = 1000 
+LOOP_COUNT = 1000 # how many accounts to be made
 WAIT_SECONDS = 25
 
 # Shared counter and lock
@@ -21,9 +20,8 @@ zip_counter = 1
 zip_lock = threading.Lock()
 
 DEVICE_NAMES = {
-    "127.0.0.1:21503": "MEMU1",
-    "127.0.0.1:21513": "MEMU2",
-    # Add more as needed
+    "672.0.0.1:21503": "MEMU1" #same ip add in devices, i just change my ip for privacy
+    
 }
 
 # === HELPER FUNCTIONS ===
@@ -50,6 +48,30 @@ def zip_folder(source_folder, zip_path):
                 file_path = os.path.join(root, file)
                 arc_path = os.path.relpath(file_path, source_folder)
                 zipf.write(file_path, arc_path)
+
+def get_group_folder_and_index(base_dir, date_str):
+    # Find the latest group folder for today, or create a new one if needed
+    group_num = 1
+    while True:
+        group_folder = os.path.join(base_dir, f"{date_str} #{group_num}")
+        if not os.path.exists(group_folder):
+            os.makedirs(group_folder)
+            return group_folder, 1  # Start at 1 if new
+        # Find used numbers in this folder
+        zip_files = [f for f in os.listdir(group_folder) if f.endswith('.zip')]
+        used_numbers = set()
+        for fname in zip_files:
+            if fname.startswith('#'):
+                try:
+                    num = int(fname.split('_')[0][1:])
+                    used_numbers.add(num)
+                except Exception:
+                    pass
+        # Find the lowest missing number in 1-100
+        for i in range(1, 101):
+            if i not in used_numbers:
+                return group_folder, i
+        group_num += 1
 
 def backup_account(loop_index, device):
     global zip_counter
@@ -84,13 +106,12 @@ def backup_account(loop_index, device):
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    date_str = datetime.datetime.now().strftime("%m_%d_%Y")
+    date_str = datetime.datetime.now().strftime("%m-%d-%Y")
     memu_name = DEVICE_NAMES.get(device, device.replace(":", "_"))
     with zip_lock:
-        current_index = zip_counter
-        zip_counter += 1
-        zip_filename = f"#{current_index}_{date_str}-{memu_name}.zip"
-        zip_path = os.path.join(OUTPUT_DIR, zip_filename)
+        group_folder, missing_index = get_group_folder_and_index(OUTPUT_DIR, date_str)
+        zip_filename = f"#{missing_index}_{date_str}-{memu_name}.zip"
+        zip_path = os.path.join(group_folder, zip_filename)
 
     print(f"🗜 Creating ZIP file: {zip_path}")
     try:
