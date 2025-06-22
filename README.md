@@ -1,4 +1,5 @@
-# SimCity Backup Automation
+
+# SimCity Backup Automation 
 
 This script automates the process of backing up SimCity game data from an Android emulator (MEmu) using ADB. It organizes backups into folders by date, fills missing slots, and can send progress and error notifications to a Discord channel via webhook.
 
@@ -15,7 +16,7 @@ This script automates the process of backing up SimCity game data from an Androi
 - Windows OS
 - [requests](https://pypi.org/project/requests/) Python package
 
-## Setup Instructions
+## Setup Instructions (This steps only if you want to use the webhook to monitor your bot, if you are not using the webhook feature just ignore this steps)
 
 ### 1. Clone or Download the Project
 Place all files in a folder, e.g. `E:/SUSSSSSSSS/SIMCITY`.
