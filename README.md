@@ -1,19 +1,67 @@
-# 📦 SimCity Account Backup Automation
+# SimCity Backup Automation
 
-This Python script automates the creation of fresh SimCity BuildIt accounts in MEmu and backs them up by saving the game's `appdata.i3d` and `ids` files into timestamped `.zip` files.
+This script automates the process of backing up SimCity game data from an Android emulator (MEmu) using ADB. It organizes backups into folders by date, fills missing slots, and can send progress and error notifications to a Discord channel via webhook.
 
-## 🔧 Requirements
+## Features
+- Automated backup of SimCity game files from emulator
+- Organizes ZIP backups into date-based folders, filling missing slots before creating new folders
+- Discord webhook notifications for progress and errors (optional, can be toggled)
+- Multi-threaded for multiple devices (if enabled)
 
+## Requirements
+- Python 3.7+
+- MEmu Android Emulator (with ADB)
+- SimCity installed on the emulator
 - Windows OS
-- [Python 3.x](https://www.python.org/downloads/)
-- [MEmu Android Emulator](https://www.memuplay.com/)
-- ADB (bundled with MEmu or Android SDK)
-- Game: `SimCity BuildIt` installed on MEmu
+- [requests](https://pypi.org/project/requests/) Python package
 
-## 📁 Folder Structure
+## Setup Instructions
 
-```plaintext
-project_folder/
-├── script.py              # Your main Python automation script
-├── temp_simcity_data/     # Temporary storage for pulled game files
-└── accounts/              # Final backups saved as ZIPs
+### 1. Clone or Download the Project
+Place all files in a folder, e.g. `E:/SUSSSSSSSS/SIMCITY`.
+
+### 2. Create and Activate a Virtual Environment (.venv)
+Open Command Prompt in your project folder and run:
+
+```
+python -m venv .venv
+```
+
+Activate the virtual environment:
+- **Windows:**
+  - Command Prompt:
+    ```
+    .venv\Scripts\activate
+    ```
+  - PowerShell:
+    ```
+    .venv\Scripts\Activate.ps1
+    ```
+
+### 3. Install Requirements
+With the virtual environment activated, run:
+```
+pip install -r requirements.txt
+```
+
+### 4. Configure the Script
+- Set your ADB path, device IPs, and Discord webhook URL in `pc_automate.py` as needed.
+- To enable/disable webhook notifications, set `WEBHOOK_ENABLED = True` or `False` at the top of the script.
+
+### 5. Run the Script
+With the virtual environment activated, run:
+```
+python pc_automate.py
+```
+
+## Notes
+- Backups are saved in the `accounts` folder, organized by date and group.
+- Only today's folders are filled; previous dates are not affected.
+- Webhook notifications are optional and can be toggled in the script.
+
+## Troubleshooting
+- If you see `ModuleNotFoundError: No module named 'requests'`, make sure you installed requirements in the correct environment.
+- Ensure ADB is installed and accessible at the path specified in the script.
+- For Discord notifications, ensure your webhook URL is correct.
+
+--- 
