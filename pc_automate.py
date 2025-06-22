@@ -4,42 +4,56 @@ import zipfile
 import shutil
 import datetime
 import threading
+import requests
 
 # === CONFIGURATION ===
-ADB_PATH = r'"C:\Program Files\Microvirt\MEmu\adb.exe"' # if using other adb find your adb directory and put here
-DEVICES = ["153.1.0.1:21203"] # add another ip if you want more intances and put also in device_names
+ADB_PATH = r'"C:\\Program Files\\Microvirt\\MEmu\\adb.exe"'  # Set your ADB path here
+DEVICES = ["127.0.0.1:PORT"]  # <-- Replace with your emulator/device IPs and ports
 PACKAGE = "com.ea.game.simcitymobile_row"
 REMOTE_DIR = f"/sdcard/Android/data/{PACKAGE}/files"
-OUTPUT_DIR = r"E:\SUSSSSSSSS\SIMCITY\accounts" # where your accounts will be save, changable
+OUTPUT_DIR = r"E:\\YOUR_PATH\\SIMCITY\\accounts"  # <-- Set your desired output path
 TEMP_DIR = "temp_simcity_data"
-LOOP_COUNT = 1000 # how many accounts to be made
+LOOP_COUNT = 1000 
 WAIT_SECONDS = 25
+
+# === WEBHOOK CONFIGURATION ===
+WEBHOOK_ENABLED = False  # Set to True to enable webhook feature
+WEBHOOK_URL = "https://discord.com/api/webhooks/your_webhook_url_here"  # <-- Set your Discord webhook URL here
 
 # Shared counter and lock
 zip_counter = 1
 zip_lock = threading.Lock()
 
 DEVICE_NAMES = {
-    "672.0.0.1:21503": "MEMU1" #same ip add in devices, i just change my ip for privacy
-    
+    "127.0.0.1:PORT": "MEMU1"  # <-- Replace with your emulator/device IPs and names
 }
 
 # === HELPER FUNCTIONS ===
-
 def run_adb(command, device):
     full_cmd = f'{ADB_PATH} -s {device} {command}'
-    print(f"🧪 ADB: {full_cmd}")
     result = os.popen(full_cmd).read()
-    print(f"📤 Output:\n{result.strip()}")
     return result.strip()
 
 def check_adb_connection(device):
-    print("🔌 Checking ADB connection...")
-    result = os.popen(f'{ADB_PATH} devices').read()
-    if device not in result:
-        print("❌ Device not connected via ADB.")
+    try:
+        result = os.popen(f'{ADB_PATH} devices').read()
+    except FileNotFoundError:
+        print("[ERROR] adb executable not found")
+        send_webhook("[ERROR] adb executable not found")
         exit(1)
-    print("✅ ADB device connected.")
+    except Exception as e:
+        print(f"[ERROR] unknown error: {e}")
+        send_webhook(f"[ERROR] unknown error: {e}")
+        exit(1)
+    if device not in result:
+        if 'offline' in result:
+            print("[ERROR] device is offline")
+            send_webhook("[ERROR] device is offline")
+        else:
+            print("[ERROR] cant connect into adb")
+            send_webhook("[ERROR] cant connect into adb")
+        exit(1)
+    # No print if successful
 
 def zip_folder(source_folder, zip_path):
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -79,52 +93,52 @@ def get_group_folder_and_index(base_dir, date_str):
     os.makedirs(group_folder, exist_ok=True)
     return group_folder, 1
 
+def send_webhook(message):
+    if not ('WEBHOOK_ENABLED' in globals() and WEBHOOK_ENABLED):
+        return
+    try:
+        requests.post(WEBHOOK_URL, json={"content": message})
+    except Exception as e:
+        print(f"[ERROR] Failed to send webhook: {e}")
+
 def backup_account(loop_index, device):
     global zip_counter
-    print(f"\n📥 Backing up account #{loop_index} for device {device}")
-
-    run_adb("root", device)
-    run_adb(f"shell su -c 'chmod -R 777 {REMOTE_DIR}'", device)
-
-    file_list = run_adb(f"shell ls {REMOTE_DIR}", device)
-    print("📁 Files found:")
-    print(file_list)
-
-    if "appdata.i3d" not in file_list:
-        print("❌ appdata.i3d not found! Skipping this backup.")
-        return
-
-    if os.path.exists(TEMP_DIR):
-        shutil.rmtree(TEMP_DIR)
-    os.makedirs(TEMP_DIR, exist_ok=True)
-
-    run_adb(f"pull {REMOTE_DIR}/appdata.i3d {os.path.join(TEMP_DIR, 'appdata.i3d')}", device)
-    run_adb(f"pull {REMOTE_DIR}/ids {os.path.join(TEMP_DIR, 'ids')}", device)
-
-    pulled_files = os.listdir(TEMP_DIR)
-    print("📂 Files pulled into TEMP_DIR:")
-    for f in pulled_files:
-        print(" -", f)
-
-    if not pulled_files:
-        print("❌ No files pulled. Skipping ZIP.")
-        return
-
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
     date_str = datetime.datetime.now().strftime("%m-%d-%Y")
     memu_name = DEVICE_NAMES.get(device, device.replace(":", "_"))
     with zip_lock:
         group_folder, missing_index = get_group_folder_and_index(OUTPUT_DIR, date_str)
         zip_filename = f"#{missing_index}_{date_str}-{memu_name}.zip"
         zip_path = os.path.join(group_folder, zip_filename)
-
-    print(f"🗜 Creating ZIP file: {zip_path}")
+    zip_files = [f for f in os.listdir(group_folder) if f.endswith('.zip')]
+    progress_msg = f"{len(zip_files)+1}/100\nFolder name: {os.path.basename(group_folder)}\nZIP name: {zip_filename}"
+    print(f"\n{progress_msg}")
+    send_webhook(progress_msg)
+    run_adb("root", device)
+    run_adb(f"shell su -c 'chmod -R 777 {REMOTE_DIR}'", device)
+    file_list = run_adb(f"shell ls {REMOTE_DIR}", device)
+    if "appdata.i3d" not in file_list:
+        print("[SKIP] appdata.i3d not found!")
+        send_webhook("[SKIP] appdata.i3d not found!")
+        return
+    if os.path.exists(TEMP_DIR):
+        shutil.rmtree(TEMP_DIR)
+    os.makedirs(TEMP_DIR, exist_ok=True)
+    run_adb(f"pull {REMOTE_DIR}/appdata.i3d {os.path.join(TEMP_DIR, 'appdata.i3d')}", device)
+    run_adb(f"pull {REMOTE_DIR}/ids {os.path.join(TEMP_DIR, 'ids')}", device)
+    pulled_files = os.listdir(TEMP_DIR)
+    if not pulled_files:
+        print("[SKIP] No files pulled.")
+        send_webhook("[SKIP] No files pulled.")
+        return
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    print("Saving files...")
     try:
         zip_folder(TEMP_DIR, zip_path)
-        print(f"✅ ZIP saved at: {zip_path}")
+        print(f"[SAVED] {zip_path}")
+        send_webhook(f"[SAVED] {zip_path}")
     except Exception as e:
-        print(f"❌ ZIP creation failed: {e}")
+        print(f"[ERROR] ZIP creation failed: {e}")
+        send_webhook(f"[ERROR] ZIP creation failed: {e}")
 
 def reset_app(device):
     print("♻️ Resetting SimCity...")
@@ -210,37 +224,32 @@ def tutorial_phase(device):
     print("✅ Tutorial input done.")
 
 def automate_device(device):
-    print(f"\n📡 Connecting to MEmu ADB for device {device}...")
+    print(f"\n[LAUNCH] Connecting to MEmu ADB for device {device}...")
     os.system(f'{ADB_PATH} connect {device}')
     check_adb_connection(device)
-
     for i in range(1, LOOP_COUNT + 1):
-        print(f"\n🔁 Loop {i}/{LOOP_COUNT} for device {device}")
-
-        print("📱 Launching SimCity...")
+        print(f"\n[PROGRESS] Loop {i}/{LOOP_COUNT} for device {device}")
+        print("Launching SimCity...")
         run_adb(f"shell monkey -p {PACKAGE} -c android.intent.category.LAUNCHER 1", device)
         time.sleep(WAIT_SECONDS)
-
+        print("Inputting birth year and month...")
         input_birth_date(device)
-        print("⏳ Waiting for tutorial screen to appear...")
+        print("[WAIT] Waiting for tutorial screen to appear...")
         time.sleep(40)
-
+        print("[TUTORIAL] Running tutorial phase...")
         tutorial_phase(device)
-        print("⏳ Waiting for game to finish loading...")
+        print("[WAIT] Waiting for game to finish loading...")
         time.sleep(20)
-
-        print("🛑 Stopping SimCity...")
+        print("Stopping SimCity...")
         run_adb(f"shell am force-stop {PACKAGE}", device)
         time.sleep(2)
-
         try:
             backup_account(i, device)
         except Exception as e:
-            print(f"⚠️ Backup failed for account #{i} on device {device}: {e}")
-
+            print(f"[ERROR] Backup failed for account #{i} on device {device}: {e}")
+        print("[RESET] Resetting app...")
         reset_app(device)
         time.sleep(5)
-
     if os.path.exists(TEMP_DIR):
         shutil.rmtree(TEMP_DIR)
 
@@ -256,4 +265,4 @@ def main():
     print("\n✅ All accounts backed up successfully!")
 
 if __name__ == "__main__":
-    main()
+    main() 
